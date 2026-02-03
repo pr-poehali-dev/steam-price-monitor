@@ -43,6 +43,7 @@ def handler(event: dict, context) -> dict:
         
         # Специальный путь для сохранения Steam credentials
         path = event.get('path', '')
+        print(f"Method: {method}, Path: {path}, Steam ID: {steam_id}")
         if method == 'PUT' and 'steam-credentials' in path:
             body = json.loads(event.get('body', '{}'))
             
