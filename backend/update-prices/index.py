@@ -12,22 +12,33 @@ def get_db_connection():
 def get_steam_price(item_hash_name: str) -> float:
     """Получает актуальную цену предмета из Steam Market"""
     try:
-        price_url = f'https://steamcommunity.com/market/priceoverview/?appid=730&currency=5&market_hash_name={urllib.parse.quote(item_hash_name)}'
+        price_url = f'https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name={urllib.parse.quote(item_hash_name)}'
         
         req = urllib.request.Request(price_url)
-        req.add_header('User-Agent', 'Mozilla/5.0')
+        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
         
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode('utf-8'))
         
+        print(f"Steam API response for {item_hash_name}: {data}")
+        
         if data.get('success'):
             lowest_price = data.get('lowest_price', '')
             if lowest_price:
-                price_str = lowest_price.replace('pуб.', '').replace(',', '.').strip()
-                try:
-                    return float(price_str)
-                except ValueError:
-                    return None
+                import re
+                price_match = re.search(r'[\d,\.]+', lowest_price)
+                if price_match:
+                    price_str = price_match.group(0).replace(',', '')
+                    try:
+                        price_usd = float(price_str)
+                        price_rub = price_usd * 95
+                        print(f"Parsed price: ${price_usd} -> {price_rub}₽")
+                        return price_rub
+                    except ValueError:
+                        print(f"Failed to parse price: {price_str}")
+                        return None
+        
+        print(f"No valid price found in response")
         return None
     except Exception as e:
         print(f"Error fetching price for {item_hash_name}: {e}")
