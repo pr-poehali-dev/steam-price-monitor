@@ -1,0 +1,263 @@
+import json
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+def get_db_connection():
+    """Создаёт подключение к базе данных"""
+    return psycopg2.connect(os.environ['DATABASE_URL'])
+
+def handler(event: dict, context) -> dict:
+    """API для управления треками пользователя"""
+    method = event.get('httpMethod', 'GET')
+
+    if method == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id'
+            },
+            'body': '',
+            'isBase64Encoded': False
+        }
+
+    user_id = event.get('headers', {}).get('X-User-Id') or event.get('headers', {}).get('x-user-id')
+    
+    if not user_id:
+        user_id = '1'
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if method == 'GET':
+            track_id = event.get('queryStringParameters', {}).get('id')
+            
+            if track_id:
+                cur.execute(
+                    f"SELECT * FROM {os.environ['MAIN_DB_SCHEMA']}.tracks WHERE id = %s AND user_id = %s",
+                    (track_id, user_id)
+                )
+                track = cur.fetchone()
+                
+                if not track:
+                    return {
+                        'statusCode': 404,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Track not found'}),
+                        'isBase64Encoded': False
+                    }
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps(dict(track), default=str),
+                    'isBase64Encoded': False
+                }
+            else:
+                cur.execute(
+                    f"SELECT * FROM {os.environ['MAIN_DB_SCHEMA']}.tracks WHERE user_id = %s ORDER BY created_at DESC",
+                    (user_id,)
+                )
+                tracks = cur.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps([dict(t) for t in tracks], default=str),
+                    'isBase64Encoded': False
+                }
+
+        elif method == 'POST':
+            body = json.loads(event.get('body', '{}'))
+            
+            required_fields = ['item_name', 'item_hash_name', 'target_price']
+            if not all(field in body for field in required_fields):
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Missing required fields'}),
+                    'isBase64Encoded': False
+                }
+
+            cur.execute(
+                f"""
+                INSERT INTO {os.environ['MAIN_DB_SCHEMA']}.tracks 
+                (user_id, item_name, item_hash_name, item_image, current_price, target_price, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING *
+                """,
+                (
+                    user_id,
+                    body['item_name'],
+                    body['item_hash_name'],
+                    body.get('item_image'),
+                    body.get('current_price'),
+                    body['target_price'],
+                    body.get('status', 'active')
+                )
+            )
+            
+            new_track = cur.fetchone()
+            conn.commit()
+            
+            return {
+                'statusCode': 201,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps(dict(new_track), default=str),
+                'isBase64Encoded': False
+            }
+
+        elif method == 'PUT':
+            track_id = event.get('queryStringParameters', {}).get('id')
+            body = json.loads(event.get('body', '{}'))
+            
+            if not track_id:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Track ID is required'}),
+                    'isBase64Encoded': False
+                }
+
+            update_fields = []
+            values = []
+            
+            if 'current_price' in body:
+                update_fields.append('current_price = %s')
+                values.append(body['current_price'])
+            if 'target_price' in body:
+                update_fields.append('target_price = %s')
+                values.append(body['target_price'])
+            if 'status' in body:
+                update_fields.append('status = %s')
+                values.append(body['status'])
+            
+            update_fields.append('updated_at = CURRENT_TIMESTAMP')
+            
+            values.extend([track_id, user_id])
+            
+            cur.execute(
+                f"""
+                UPDATE {os.environ['MAIN_DB_SCHEMA']}.tracks 
+                SET {', '.join(update_fields)}
+                WHERE id = %s AND user_id = %s
+                RETURNING *
+                """,
+                values
+            )
+            
+            updated_track = cur.fetchone()
+            conn.commit()
+            
+            if not updated_track:
+                return {
+                    'statusCode': 404,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Track not found'}),
+                    'isBase64Encoded': False
+                }
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps(dict(updated_track), default=str),
+                'isBase64Encoded': False
+            }
+
+        elif method == 'DELETE':
+            track_id = event.get('queryStringParameters', {}).get('id')
+            
+            if not track_id:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Track ID is required'}),
+                    'isBase64Encoded': False
+                }
+
+            cur.execute(
+                f"DELETE FROM {os.environ['MAIN_DB_SCHEMA']}.tracks WHERE id = %s AND user_id = %s RETURNING id",
+                (track_id, user_id)
+            )
+            
+            deleted = cur.fetchone()
+            conn.commit()
+            
+            if not deleted:
+                return {
+                    'statusCode': 404,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Track not found'}),
+                    'isBase64Encoded': False
+                }
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'message': 'Track deleted successfully'}),
+                'isBase64Encoded': False
+            }
+
+        return {
+            'statusCode': 405,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'Method not allowed'}),
+            'isBase64Encoded': False
+        }
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': str(e)}),
+            'isBase64Encoded': False
+        }
+    finally:
+        if conn:
+            cur.close()
+            conn.close()

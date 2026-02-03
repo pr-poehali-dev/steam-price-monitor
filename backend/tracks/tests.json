@@ -1,0 +1,37 @@
+{
+  "tests": [
+    {
+      "name": "Get all tracks for user",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": "array",
+      "bodyMatcher": "type"
+    },
+    {
+      "name": "Create new track",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "item_name": "AK-47 | Redline (Field-Tested)",
+        "item_hash_name": "AK-47 | Redline (Field-Tested)",
+        "item_image": "https://example.com/image.png",
+        "current_price": 750,
+        "target_price": 700
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "item_name": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

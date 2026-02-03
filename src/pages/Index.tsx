@@ -11,10 +11,11 @@ import Icon from '@/components/ui/icon';
 
 type Track = {
   id: number;
-  name: string;
-  image: string;
-  currentPrice: number;
-  targetPrice: number;
+  item_name: string;
+  item_hash_name: string;
+  item_image: string;
+  current_price: number;
+  target_price: number;
   status: 'active' | 'purchased';
 };
 
@@ -54,44 +55,27 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    setTracks([
-      {
-        id: 1,
-        name: 'AK-47 | Redline (Field-Tested)',
-        image: 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot7HxfDhjxszJemkV09-5lpKKqPrxN7LEmyVQ7MEpiLuSrYmnjQO3-UdsZGHyd4_Bd1RvNQ7T_FDrw-_ng5Pu75iY1zI97bhzJxFo/360fx360f',
-        currentPrice: 750,
-        targetPrice: 700,
-        status: 'active',
-      },
-      {
-        id: 2,
-        name: 'AWP | Asiimov (Field-Tested)',
-        image: 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot621FAR17PLfYQJD_9W7m5a0mvLwOq7cqWZQ7Mxkh6eQ9N2t2wLkrkc5Ymz2J4SXdgU4N1nS_Fu_kr-50cXutZ-cyXpgviF0sC2PlhPkhx1SLrs4RqJQd0g/360fx360f',
-        currentPrice: 3200,
-        targetPrice: 3000,
-        status: 'active',
-      },
-    ]);
+    loadTracks();
   }, []);
 
-  const mockTracks: Track[] = [
-    {
-      id: 1,
-      name: 'AK-47 | Redline (Field-Tested)',
-      image: 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot7HxfDhjxszJemkV09-5lpKKqPrxN7LEmyVQ7MEpiLuSrYmnjQO3-UdsZGHyd4_Bd1RvNQ7T_FDrw-_ng5Pu75iY1zI97bhzJxFo/360fx360f',
-      currentPrice: 750,
-      targetPrice: 700,
-      status: 'active',
-    },
-    {
-      id: 2,
-      name: 'AWP | Asiimov (Field-Tested)',
-      image: 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot621FAR17PLfYQJD_9W7m5a0mvLwOq7cqWZQ7Mxkh6eQ9N2t2wLkrkc5Ymz2J4SXdgU4N1nS_Fu_kr-50cXutZ-cyXpgviF0sC2PlhPkhx1SLrs4RqJQd0g/360fx360f',
-      currentPrice: 3200,
-      targetPrice: 3000,
-      status: 'active',
-    },
-  ];
+  const loadTracks = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617', {
+        headers: {
+          'X-User-Id': '1'
+        }
+      });
+      const data = await response.json();
+      setTracks(data);
+    } catch (error) {
+      console.error('Failed to load tracks:', error);
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить треки',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const mockPurchases: Purchase[] = [
     {
@@ -178,19 +162,32 @@ const Index = () => {
     }
 
     try {
-      const response = await fetch(`https://functions.poehali.dev/1e257996-9878-4b24-b874-4b0622b39992?item=${encodeURIComponent(selectedItem.hash_name)}`);
-      const priceData = await response.json();
+      const priceResponse = await fetch(`https://functions.poehali.dev/1e257996-9878-4b24-b874-4b0622b39992?item=${encodeURIComponent(selectedItem.hash_name)}`);
+      const priceData = await priceResponse.json();
 
-      const newTrack: Track = {
-        id: Date.now(),
-        name: selectedItem.name,
-        image: selectedItem.image,
-        currentPrice: priceData.price_value || 0,
-        targetPrice: parseFloat(targetPrice),
+      const trackData = {
+        item_name: selectedItem.name,
+        item_hash_name: selectedItem.hash_name,
+        item_image: selectedItem.image,
+        current_price: priceData.price_value || 0,
+        target_price: parseFloat(targetPrice),
         status: 'active',
       };
 
-      setTracks([...tracks, newTrack]);
+      const createResponse = await fetch('https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': '1'
+        },
+        body: JSON.stringify(trackData)
+      });
+
+      if (!createResponse.ok) {
+        throw new Error('Failed to create track');
+      }
+
+      await loadTracks();
       
       toast({
         title: 'Трек добавлен!',
@@ -423,23 +420,50 @@ const Index = () => {
           <Card key={track.id} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex gap-4">
-                <img src={track.image} alt={track.name} className="w-24 h-24 object-cover rounded-lg" />
+                <img src={track.item_image} alt={track.item_name} className="w-24 h-24 object-cover rounded-lg" />
                 <div className="flex-1">
-                  <h3 className="font-semibold mb-2">{track.name}</h3>
+                  <h3 className="font-semibold mb-2">{track.item_name}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Текущая цена:</span>
-                      <span className="font-semibold">{track.currentPrice}₽</span>
+                      <span className="font-semibold">{track.current_price}₽</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Целевая цена:</span>
-                      <span className="font-semibold text-[#66C0F4]">{track.targetPrice}₽</span>
+                      <span className="font-semibold text-[#66C0F4]">{track.target_price}₽</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex gap-2 justify-between items-center">
                     <Badge variant={track.status === 'active' ? 'default' : 'secondary'}>
                       {track.status === 'active' ? 'Активен' : 'Куплен'}
                     </Badge>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={async () => {
+                        try {
+                          await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
+                            method: 'DELETE',
+                            headers: {
+                              'X-User-Id': '1'
+                            }
+                          });
+                          await loadTracks();
+                          toast({
+                            title: 'Трек удалён',
+                            description: 'Предмет убран из отслеживания',
+                          });
+                        } catch (error) {
+                          toast({
+                            title: 'Ошибка',
+                            description: 'Не удалось удалить трек',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                    >
+                      <Icon name="Trash2" size={16} className="text-red-500" />
+                    </Button>
                   </div>
                 </div>
               </div>
