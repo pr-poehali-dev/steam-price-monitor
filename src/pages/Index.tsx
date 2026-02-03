@@ -57,15 +57,17 @@ const Index = () => {
 
   useEffect(() => {
     loadTracks();
-    
+  }, []);
+
+  useEffect(() => {
+    if (tracks.length === 0) return;
+
     const intervalId = setInterval(() => {
-      if (tracks.length > 0) {
-        handleUpdatePrices();
-      }
+      handleUpdatePrices();
     }, 5 * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [tracks.length]);
 
   const loadTracks = async () => {
     try {
