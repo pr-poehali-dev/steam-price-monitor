@@ -62,6 +62,9 @@ const Index = () => {
   const [steamId, setSteamId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Steam User');
   const [avatarUrl, setAvatarUrl] = useState<string>('https://api.dicebear.com/7.x/avataaars/svg?seed=user');
+  const [steamCookie, setSteamCookie] = useState<string>('');
+  const [sessionId, setSessionId] = useState<string>('');
+  const [isSavingCredentials, setIsSavingCredentials] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -916,26 +919,8 @@ const Index = () => {
               type="password"
               placeholder="76561199123456789||..."
               className="mt-2"
-              onChange={async (e) => {
-                try {
-                  const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617/steam-credentials`, {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'X-Steam-Id': steamId || ''
-                    },
-                    body: JSON.stringify({ steam_cookie: e.target.value })
-                  });
-                  if (response.ok) {
-                    toast({
-                      title: 'Cookie сохранён',
-                      description: 'Steam cookie успешно обновлён',
-                    });
-                  }
-                } catch (error) {
-                  console.error('Failed to save steam cookie:', error);
-                }
-              }}
+              value={steamCookie}
+              onChange={(e) => setSteamCookie(e.target.value)}
             />
           </div>
           <div>
@@ -945,28 +930,68 @@ const Index = () => {
               type="password"
               placeholder="abcdef123456..."
               className="mt-2"
-              onChange={async (e) => {
-                try {
-                  const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617/steam-credentials`, {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'X-Steam-Id': steamId || ''
-                    },
-                    body: JSON.stringify({ steam_session_id: e.target.value })
-                  });
-                  if (response.ok) {
-                    toast({
-                      title: 'Session ID сохранён',
-                      description: 'Steam session ID успешно обновлён',
-                    });
-                  }
-                } catch (error) {
-                  console.error('Failed to save session id:', error);
-                }
-              }}
+              value={sessionId}
+              onChange={(e) => setSessionId(e.target.value)}
             />
           </div>
+          <Button
+            className="w-full bg-[#66C0F4] hover:bg-[#1B2838]"
+            onClick={async () => {
+              if (!steamCookie || !sessionId) {
+                toast({
+                  title: 'Заполните оба поля',
+                  description: 'Необходимо указать и cookie, и session ID',
+                  variant: 'destructive',
+                });
+                return;
+              }
+
+              setIsSavingCredentials(true);
+              try {
+                const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617/steam-credentials`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-Steam-Id': steamId || ''
+                  },
+                  body: JSON.stringify({ 
+                    steam_cookie: steamCookie,
+                    steam_session_id: sessionId
+                  })
+                });
+
+                if (response.ok) {
+                  toast({
+                    title: '✅ Настройки сохранены',
+                    description: 'Steam credentials успешно обновлены',
+                  });
+                } else {
+                  throw new Error('Failed to save credentials');
+                }
+              } catch (error) {
+                toast({
+                  title: 'Ошибка сохранения',
+                  description: 'Не удалось сохранить настройки',
+                  variant: 'destructive',
+                });
+              } finally {
+                setIsSavingCredentials(false);
+              }
+            }}
+            disabled={isSavingCredentials}
+          >
+            {isSavingCredentials ? (
+              <>
+                <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                Сохранение...
+              </>
+            ) : (
+              <>
+                <Icon name="Save" size={16} className="mr-2" />
+                Сохранить настройки
+              </>
+            )}
+          </Button>
           <div className="p-3 bg-gray-50 rounded-lg border text-xs text-muted-foreground">
             <Icon name="Lock" size={14} className="inline mr-1" />
             Ваши данные хранятся в зашифрованном виде и используются только для покупок
