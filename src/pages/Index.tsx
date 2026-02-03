@@ -65,6 +65,8 @@ const Index = () => {
   const [steamCookie, setSteamCookie] = useState<string>('');
   const [sessionId, setSessionId] = useState<string>('');
   const [isSavingCredentials, setIsSavingCredentials] = useState(false);
+  const [editingTrackId, setEditingTrackId] = useState<number | null>(null);
+  const [editTargetPrice, setEditTargetPrice] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -640,9 +642,75 @@ const Index = () => {
                             )}
                           </div>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Целевая цена:</span>
-                          <span className="font-semibold text-[#66C0F4]">{track.target_price}₽</span>
+                          {editingTrackId === track.id ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                value={editTargetPrice}
+                                onChange={(e) => setEditTargetPrice(e.target.value)}
+                                className="w-24 h-7 text-sm"
+                                autoFocus
+                              />
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-Steam-Id': steamId || ''
+                                      },
+                                      body: JSON.stringify({ target_price: parseFloat(editTargetPrice) })
+                                    });
+                                    if (response.ok) {
+                                      await loadTracks();
+                                      setEditingTrackId(null);
+                                      toast({
+                                        title: '✅ Цена обновлена',
+                                        description: `Новая целевая цена: ${editTargetPrice}₽`,
+                                      });
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: 'Ошибка',
+                                      description: 'Не удалось обновить целевую цену',
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }}
+                              >
+                                <Icon name="Check" size={16} className="text-green-600" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => setEditingTrackId(null)}
+                              >
+                                <Icon name="X" size={16} className="text-red-600" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-[#66C0F4]">{track.target_price}₽</span>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  setEditingTrackId(track.id);
+                                  setEditTargetPrice(track.target_price.toString());
+                                }}
+                              >
+                                <Icon name="Pencil" size={14} className="text-muted-foreground" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <input
