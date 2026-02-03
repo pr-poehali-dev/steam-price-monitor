@@ -608,7 +608,7 @@ const Index = () => {
           </div>
         ) : (
           tracks.map((track) => {
-            const priceReached = track.current_price <= track.target_price;
+            const priceReached = parseFloat(track.current_price) <= parseFloat(track.target_price);
             return (
               <Card key={track.id} className={`hover:shadow-lg transition-shadow ${priceReached ? 'border-green-500 border-2' : ''}`}>
                 <CardContent className="p-6">
