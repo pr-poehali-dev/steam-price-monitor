@@ -57,6 +57,7 @@ const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [steamId, setSteamId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Steam User');
+  const [avatarUrl, setAvatarUrl] = useState<string>('https://api.dicebear.com/7.x/avataaars/svg?seed=user');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,6 +67,7 @@ const Index = () => {
       setIsAuthenticated(true);
       setSteamId(authData.steam_id);
       setUserName(authData.user_name || 'Steam User');
+      setAvatarUrl(authData.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=user');
     }
     
     const urlParams = new URLSearchParams(window.location.search);
@@ -104,6 +106,44 @@ const Index = () => {
     window.location.href = `https://steamcommunity.com/openid/login?${params.toString()}`;
   };
 
+  const loadSteamProfile = async (steamId: string) => {
+    try {
+      const corsProxy = 'https://corsproxy.io/?';
+      const apiKey = 'YOUR_STEAM_API_KEY';
+      const apiUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`;
+      
+      const response = await fetch(corsProxy + encodeURIComponent(apiUrl));
+      const data = await response.json();
+      
+      if (data?.response?.players && data.response.players.length > 0) {
+        const player = data.response.players[0];
+        const authData = {
+          steam_id: steamId,
+          user_name: player.personaname,
+          avatar_url: player.avatarfull || player.avatarmedium
+        };
+        
+        localStorage.setItem('steam_auth', JSON.stringify(authData));
+        setUserName(player.personaname);
+        setAvatarUrl(player.avatarfull || player.avatarmedium);
+        
+        return authData;
+      }
+    } catch (error) {
+      console.error('Failed to load Steam profile:', error);
+    }
+    
+    const fallbackData = {
+      steam_id: steamId,
+      user_name: `User${steamId.slice(-4)}`,
+      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${steamId}`
+    };
+    localStorage.setItem('steam_auth', JSON.stringify(fallbackData));
+    setUserName(fallbackData.user_name);
+    setAvatarUrl(fallbackData.avatar_url);
+    return fallbackData;
+  };
+
   const handleSteamCallback = async (params: Record<string, string>) => {
     const claimedId = params['openid.claimed_id'];
     if (!claimedId) return;
@@ -112,21 +152,17 @@ const Index = () => {
     if (!steamIdMatch) return;
     
     const steamId = steamIdMatch[1];
-    const authData = {
-      steam_id: steamId,
-      user_name: `User${steamId.slice(-4)}`
-    };
     
-    localStorage.setItem('steam_auth', JSON.stringify(authData));
     setIsAuthenticated(true);
     setSteamId(steamId);
-    setUserName(authData.user_name);
+    
+    const profileData = await loadSteamProfile(steamId);
     
     window.history.replaceState({}, document.title, window.location.pathname);
     
     toast({
       title: '✅ Вход выполнен',
-      description: `Добро пожаловать, ${authData.user_name}!`,
+      description: `Добро пожаловать, ${profileData?.user_name || `User${steamId.slice(-4)}`}!`,
     });
   };
 
@@ -135,6 +171,7 @@ const Index = () => {
     setIsAuthenticated(false);
     setSteamId(null);
     setUserName('Steam User');
+    setAvatarUrl('https://api.dicebear.com/7.x/avataaars/svg?seed=user');
     toast({
       title: 'Выход выполнен',
       description: 'Вы вышли из аккаунта',
@@ -801,8 +838,8 @@ const Index = () => {
         <CardContent className="p-6">
           <div className="flex gap-6 items-center">
             <Avatar className="w-24 h-24">
-              <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" />
-              <AvatarFallback>US</AvatarFallback>
+              <AvatarImage src={avatarUrl} />
+              <AvatarFallback>{userName.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <h3 className="text-2xl font-bold mb-1">{userName}</h3>
@@ -879,6 +916,10 @@ const Index = () => {
             </div>
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={avatarUrl} />
+                  <AvatarFallback>{userName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
                 <div className="text-right">
                   <p className="font-medium text-sm">{userName}</p>
                   <p className="text-xs text-muted-foreground">ID: {steamId?.slice(-6)}</p>
