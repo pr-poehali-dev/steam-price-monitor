@@ -655,9 +655,11 @@ const Index = () => {
                             onClick={() => {
                               const hashName = track.item_hash_name || track.item_name;
                               const marketUrl = `https://steamcommunity.com/market/listings/730/${encodeURIComponent(hashName)}`;
+                              console.log('Hash name:', hashName);
                               console.log('Opening Steam Market URL:', marketUrl);
                               window.open(marketUrl, '_blank');
                             }}
+                            title={track.item_hash_name}
                           >
                             <Icon name="ExternalLink" size={14} />
                             Steam
