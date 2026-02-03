@@ -468,6 +468,7 @@ const Index = () => {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         {tracks.length === 0 ? (
