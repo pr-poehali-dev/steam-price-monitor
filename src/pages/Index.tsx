@@ -270,7 +270,7 @@ const Index = () => {
       } else {
         toast({
           title: 'Ничего не найдено',
-          description: 'Попробуйте изменить запрос',
+          description: 'Используйте английские названия (например: AK-47, M4A4, AWP)',
           variant: 'destructive',
         });
       }
@@ -391,7 +391,7 @@ const Index = () => {
       <div className="max-w-2xl mx-auto space-y-4">
         <div className="flex gap-2">
           <Input
-            placeholder="Введите название предмета из Steam..."
+            placeholder="Введите название на английском (AK-47, AWP, M4A4)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -515,9 +515,10 @@ const Index = () => {
             <div className="space-y-4">
               <div>
                 <Label>Поиск предмета</Label>
+                <p className="text-sm text-muted-foreground mt-1">Используйте английские названия: AK-47, AWP, Glock-18, M4A4</p>
                 <div className="flex gap-2 mt-2">
                   <Input
-                    placeholder="Название предмета..."
+                    placeholder="Например: AK-47 Redline..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
