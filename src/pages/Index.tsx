@@ -108,14 +108,13 @@ const Index = () => {
 
   const loadSteamProfile = async (steamId: string) => {
     try {
-      const corsProxy = 'https://corsproxy.io/?';
       const apiKey = import.meta.env.VITE_STEAM_API_KEY || '2924719F1E2EBC685261F4D331BE05A9';
       
       console.log('Loading Steam profile for:', steamId);
       
       const apiUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`;
       
-      const response = await fetch(corsProxy + encodeURIComponent(apiUrl));
+      const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`);
       const data = await response.json();
       
       console.log('Steam API response:', data);
