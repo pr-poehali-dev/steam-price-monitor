@@ -639,33 +639,47 @@ const Index = () => {
                             </Badge>
                           )}
                         </div>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={async () => {
-                            try {
-                              await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
-                                method: 'DELETE',
-                                headers: {
-                                  'X-Steam-Id': steamId || ''
-                                }
-                              });
-                              await loadTracks();
-                              toast({
-                                title: 'Трек удалён',
-                                description: 'Предмет убран из отслеживания',
-                              });
-                            } catch (error) {
-                              toast({
-                                title: 'Ошибка',
-                                description: 'Не удалось удалить трек',
-                                variant: 'destructive',
-                              });
-                            }
-                          }}
-                        >
-                          <Icon name="Trash2" size={16} className="text-red-500" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => {
+                              const marketUrl = `https://steamcommunity.com/market/listings/730/${encodeURIComponent(track.item_hash_name)}`;
+                              window.open(marketUrl, '_blank');
+                            }}
+                          >
+                            <Icon name="ExternalLink" size={14} />
+                            Steam
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={async () => {
+                              try {
+                                await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
+                                  method: 'DELETE',
+                                  headers: {
+                                    'X-Steam-Id': steamId || ''
+                                  }
+                                });
+                                await loadTracks();
+                                toast({
+                                  title: 'Трек удалён',
+                                  description: 'Предмет убран из отслеживания',
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: 'Ошибка',
+                                  description: 'Не удалось удалить трек',
+                                  variant: 'destructive',
+                                });
+                              }
+                            }}
+                          >
+                            <Icon name="Trash2" size={16} className="text-red-500" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
