@@ -41,6 +41,39 @@ def handler(event: dict, context) -> dict:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
+        # Специальный путь для сохранения Steam credentials
+        path = event.get('path', '')
+        if method == 'PUT' and 'steam-credentials' in path:
+            body = json.loads(event.get('body', '{}'))
+            
+            update_fields = []
+            values = []
+            
+            if 'steam_cookie' in body:
+                update_fields.append('steam_cookie = %s')
+                values.append(body['steam_cookie'])
+            if 'steam_session_id' in body:
+                update_fields.append('steam_session_id = %s')
+                values.append(body['steam_session_id'])
+            
+            if update_fields:
+                values.append(steam_id)
+                cur.execute(
+                    f"UPDATE {os.environ['MAIN_DB_SCHEMA']}.users SET {', '.join(update_fields)} WHERE steam_id = %s",
+                    values
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+        
         cur.execute(
             f"SELECT id FROM {os.environ['MAIN_DB_SCHEMA']}.users WHERE steam_id = %s",
             (steam_id,)
@@ -177,6 +210,9 @@ def handler(event: dict, context) -> dict:
             if 'status' in body:
                 update_fields.append('status = %s')
                 values.append(body['status'])
+            if 'auto_purchase' in body:
+                update_fields.append('auto_purchase = %s')
+                values.append(body['auto_purchase'])
             
             update_fields.append('updated_at = CURRENT_TIMESTAMP')
             

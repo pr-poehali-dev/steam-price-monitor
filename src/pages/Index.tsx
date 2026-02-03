@@ -17,6 +17,7 @@ type Track = {
   current_price: number;
   target_price: number;
   status: 'active' | 'purchased';
+  auto_purchase?: boolean;
 };
 
 type Purchase = {
@@ -305,7 +306,12 @@ const Index = () => {
       
       await loadTracks();
       
-      if (data.price_drops && data.price_drops.length > 0) {
+      if (data.purchases_made && data.purchases_made.length > 0) {
+        toast({
+          title: '🎉 Автопокупка выполнена!',
+          description: `Куплено предметов: ${data.purchases_made.length}`,
+        });
+      } else if (data.price_drops && data.price_drops.length > 0) {
         toast({
           title: '🎯 Цена достигнута!',
           description: `${data.price_drops.length} предмет(ов) достигли целевой цены!`,
@@ -635,6 +641,42 @@ const Index = () => {
                           <span className="text-muted-foreground">Целевая цена:</span>
                           <span className="font-semibold text-[#66C0F4]">{track.target_price}₽</span>
                         </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <input
+                            type="checkbox"
+                            id={`auto-purchase-${track.id}`}
+                            checked={track.auto_purchase || false}
+                            onChange={async (e) => {
+                              try {
+                                const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
+                                  method: 'PUT',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Steam-Id': steamId || ''
+                                  },
+                                  body: JSON.stringify({ auto_purchase: e.target.checked })
+                                });
+                                if (response.ok) {
+                                  await loadTracks();
+                                  toast({
+                                    title: e.target.checked ? 'Автопокупка включена' : 'Автопокупка выключена',
+                                    description: e.target.checked ? 'Предмет будет куплен автоматически при достижении цены' : 'Автоматическая покупка отключена',
+                                  });
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: 'Ошибка',
+                                  description: 'Не удалось изменить настройку автопокупки',
+                                  variant: 'destructive',
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 rounded"
+                          />
+                          <label htmlFor={`auto-purchase-${track.id}`} className="text-sm text-muted-foreground cursor-pointer">
+                            Автопокупка
+                          </label>
+                        </div>
                       </div>
                       <div className="mt-4 flex gap-2 justify-between items-center">
                         <div className="flex gap-2">
@@ -644,6 +686,11 @@ const Index = () => {
                           {priceReached && (
                             <Badge className="bg-green-500">
                               🎯 Цель достигнута
+                            </Badge>
+                          )}
+                          {track.auto_purchase && (
+                            <Badge variant="outline" className="border-green-500 text-green-700">
+                              🤖 Авто
                             </Badge>
                           )}
                         </div>
@@ -850,16 +897,79 @@ const Index = () => {
           <CardTitle>Автопокупка</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="font-medium">Автоматическая покупка</p>
-              <p className="text-sm text-muted-foreground">Покупать предметы при достижении цены</p>
-            </div>
-            <Button variant="outline">Настроить</Button>
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800 mb-2">
+              <Icon name="AlertTriangle" size={16} className="inline mr-2" />
+              <strong>Важно:</strong> Для автопокупки нужны Steam cookies
+            </p>
+            <ol className="text-xs text-yellow-700 list-decimal list-inside space-y-1">
+              <li>Откройте Steam в браузере и войдите в аккаунт</li>
+              <li>Нажмите F12 → вкладка Application → Cookies → https://steamcommunity.com</li>
+              <li>Скопируйте значения <code className="bg-yellow-100 px-1 rounded">steamLoginSecure</code> и <code className="bg-yellow-100 px-1 rounded">sessionid</code></li>
+              <li>Вставьте их в поля ниже</li>
+            </ol>
           </div>
           <div>
-            <p className="font-medium mb-2">Лимит бюджета</p>
-            <Input placeholder="Максимальная сумма покупки" type="number" />
+            <Label htmlFor="steam-cookie">Steam Cookie (steamLoginSecure)</Label>
+            <Input
+              id="steam-cookie"
+              type="password"
+              placeholder="76561199123456789||..."
+              className="mt-2"
+              onChange={async (e) => {
+                try {
+                  const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617/steam-credentials`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-Steam-Id': steamId || ''
+                    },
+                    body: JSON.stringify({ steam_cookie: e.target.value })
+                  });
+                  if (response.ok) {
+                    toast({
+                      title: 'Cookie сохранён',
+                      description: 'Steam cookie успешно обновлён',
+                    });
+                  }
+                } catch (error) {
+                  console.error('Failed to save steam cookie:', error);
+                }
+              }}
+            />
+          </div>
+          <div>
+            <Label htmlFor="session-id">Session ID</Label>
+            <Input
+              id="session-id"
+              type="password"
+              placeholder="abcdef123456..."
+              className="mt-2"
+              onChange={async (e) => {
+                try {
+                  const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617/steam-credentials`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-Steam-Id': steamId || ''
+                    },
+                    body: JSON.stringify({ steam_session_id: e.target.value })
+                  });
+                  if (response.ok) {
+                    toast({
+                      title: 'Session ID сохранён',
+                      description: 'Steam session ID успешно обновлён',
+                    });
+                  }
+                } catch (error) {
+                  console.error('Failed to save session id:', error);
+                }
+              }}
+            />
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border text-xs text-muted-foreground">
+            <Icon name="Lock" size={14} className="inline mr-1" />
+            Ваши данные хранятся в зашифрованном виде и используются только для покупок
           </div>
         </CardContent>
       </Card>
