@@ -657,9 +657,9 @@ const Index = () => {
               ))}
             </div>
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800">
-                <Icon name="Info" size={16} className="inline mr-2" />
-                Текущий интервал: <strong>каждые {updateInterval} {updateInterval === 1 ? 'минуту' : 'минут'}</strong>
+              <p className="text-sm text-blue-800 flex items-center">
+                <Icon name="Info" size={16} className="mr-2" />
+                <span>Текущий интервал: <strong>каждые {updateInterval} {updateInterval === 1 ? 'минуту' : 'минут'}</strong></span>
               </p>
             </div>
           </div>
