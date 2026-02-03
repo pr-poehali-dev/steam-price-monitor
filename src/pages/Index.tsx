@@ -53,7 +53,10 @@ const Index = () => {
   const [targetPrice, setTargetPrice] = useState('');
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
-  const [updateInterval, setUpdateInterval] = useState<number>(10);
+  const [updateInterval, setUpdateInterval] = useState<number>(() => {
+    const saved = localStorage.getItem('update_interval');
+    return saved ? parseFloat(saved) : 10;
+  });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [steamId, setSteamId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Steam User');
@@ -790,6 +793,7 @@ const Index = () => {
                   className={updateInterval === option.value ? 'bg-[#66C0F4] hover:bg-[#1B2838]' : ''}
                   onClick={() => {
                     setUpdateInterval(option.value);
+                    localStorage.setItem('update_interval', option.value.toString());
                     toast({
                       title: 'Интервал обновлен',
                       description: `Цены будут обновляться каждые ${option.label.toLowerCase()}`,
