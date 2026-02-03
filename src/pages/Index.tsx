@@ -352,22 +352,31 @@ const Index = () => {
 
     setIsLoadingFromUrl(true);
     try {
-      const urlMatch = steamUrl.match(/\/market\/listings\/730\/([^?]+)/);
+      const urlMatch = steamUrl.match(/\/market\/listings\/730\/([^?&#]+)/);
       if (!urlMatch) {
         throw new Error('Неверная ссылка');
       }
 
       const hashName = decodeURIComponent(urlMatch[1]);
       
-      const response = await fetch(`https://functions.poehali.dev/9b8f310b-9d23-4b6f-868c-1713c20546ad?q=${encodeURIComponent(hashName)}`);
-      const data = await response.json();
+      const priceResponse = await fetch(`https://functions.poehali.dev/1e257996-9878-4b24-b874-4b0622b39992?item=${encodeURIComponent(hashName)}`);
+      const priceData = await priceResponse.json();
 
-      if (data.results && data.results.length > 0) {
-        setSelectedItem(data.results[0]);
+      if (priceData.price_value) {
+        const item: SearchResult = {
+          name: hashName,
+          hash_name: hashName,
+          image: `https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgposr-kLAtl7PLZTjlH_9mkgIWKkOXLI7TDglRd4cJ5nqfE8YrnjlfmrBJrMTvwLYKScQA9ZFDQ-wO7lbzvgJbquZTN1zI97cvlCYM5/360fx360f`,
+          price: `${priceData.price_value}₽`,
+          sell_listings: 0
+        };
+        
+        setSelectedItem(item);
         setSteamUrl('');
+        setAddDialogOpen(true);
         toast({
           title: '✅ Предмет найден',
-          description: `${data.results[0].name}`,
+          description: hashName,
         });
       } else {
         throw new Error('Предмет не найден');
