@@ -789,7 +789,17 @@ const Index = () => {
               </div>
               <span className="text-xl font-bold">Steam Tracker</span>
             </div>
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => {
+                toast({
+                  title: 'Steam авторизация',
+                  description: 'Перенаправление на Steam для входа...',
+                });
+                window.location.href = 'https://steamcommunity.com/openid/login';
+              }}
+            >
               <Icon name="LogIn" size={20} />
               Войти через Steam
             </Button>
