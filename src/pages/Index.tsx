@@ -54,9 +54,25 @@ const Index = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
   const [updateInterval, setUpdateInterval] = useState<number>(5);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [steamId, setSteamId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('Steam User');
   const { toast } = useToast();
 
   useEffect(() => {
+    const savedAuth = localStorage.getItem('steam_auth');
+    if (savedAuth) {
+      const authData = JSON.parse(savedAuth);
+      setIsAuthenticated(true);
+      setSteamId(authData.steam_id);
+      setUserName(authData.user_name || 'Steam User');
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openid.claimed_id')) {
+      handleSteamCallback(Object.fromEntries(urlParams));
+    }
+    
     loadTracks();
   }, []);
 
@@ -69,6 +85,57 @@ const Index = () => {
 
     return () => clearInterval(intervalId);
   }, [tracks.length, updateInterval]);
+
+  const handleSteamLogin = () => {
+    const returnUrl = `${window.location.origin}${window.location.pathname}`;
+    const params = new URLSearchParams({
+      'openid.ns': 'http://specs.openid.net/auth/2.0',
+      'openid.mode': 'checkid_setup',
+      'openid.return_to': returnUrl,
+      'openid.realm': window.location.origin,
+      'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
+      'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select'
+    });
+    
+    window.location.href = `https://steamcommunity.com/openid/login?${params.toString()}`;
+  };
+
+  const handleSteamCallback = async (params: Record<string, string>) => {
+    const claimedId = params['openid.claimed_id'];
+    if (!claimedId) return;
+    
+    const steamIdMatch = claimedId.match(/steamcommunity\.com\/openid\/id\/(\d+)/);
+    if (!steamIdMatch) return;
+    
+    const steamId = steamIdMatch[1];
+    const authData = {
+      steam_id: steamId,
+      user_name: `User${steamId.slice(-4)}`
+    };
+    
+    localStorage.setItem('steam_auth', JSON.stringify(authData));
+    setIsAuthenticated(true);
+    setSteamId(steamId);
+    setUserName(authData.user_name);
+    
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    toast({
+      title: '✅ Вход выполнен',
+      description: `Добро пожаловать, ${authData.user_name}!`,
+    });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('steam_auth');
+    setIsAuthenticated(false);
+    setSteamId(null);
+    setUserName('Steam User');
+    toast({
+      title: 'Выход выполнен',
+      description: 'Вы вышли из аккаунта',
+    });
+  };
 
   const loadTracks = async () => {
     try {
@@ -722,12 +789,17 @@ const Index = () => {
               <AvatarFallback>US</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h3 className="text-2xl font-bold mb-1">Steam User</h3>
-              <p className="text-muted-foreground">steamuser123</p>
-              <Button className="mt-4 bg-[#66C0F4] hover:bg-[#1B2838]">
-                <Icon name="LogOut" size={20} className="mr-2" />
-                Выйти
-              </Button>
+              <h3 className="text-2xl font-bold mb-1">{userName}</h3>
+              <p className="text-muted-foreground">{steamId ? `Steam ID: ${steamId}` : 'Не авторизован'}</p>
+              {isAuthenticated && (
+                <Button 
+                  className="mt-4 bg-[#66C0F4] hover:bg-[#1B2838]"
+                  onClick={handleLogout}
+                >
+                  <Icon name="LogOut" size={20} className="mr-2" />
+                  Выйти
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -789,20 +861,31 @@ const Index = () => {
               </div>
               <span className="text-xl font-bold">Steam Tracker</span>
             </div>
-            <Button 
-              variant="outline" 
-              className="gap-2"
-              onClick={() => {
-                toast({
-                  title: 'Steam авторизация',
-                  description: 'Перенаправление на Steam для входа...',
-                });
-                window.location.href = 'https://steamcommunity.com/openid/login';
-              }}
-            >
-              <Icon name="LogIn" size={20} />
-              Войти через Steam
-            </Button>
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="font-medium text-sm">{userName}</p>
+                  <p className="text-xs text-muted-foreground">ID: {steamId?.slice(-6)}</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleLogout}
+                >
+                  <Icon name="LogOut" size={16} className="mr-2" />
+                  Выйти
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleSteamLogin}
+              >
+                <Icon name="LogIn" size={20} />
+                Войти через Steam
+              </Button>
+            )}
           </div>
         </div>
       </nav>
