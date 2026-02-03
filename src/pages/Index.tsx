@@ -451,21 +451,49 @@ const Index = () => {
       </div>
 
       <div className="max-w-2xl mx-auto space-y-4">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Введите название (АК-47, AWP, M4A4, Сланец)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="flex-1"
-          />
-          <Button 
-            className="bg-[#66C0F4] hover:bg-[#1B2838]"
-            onClick={handleSearch}
-            disabled={isSearching}
-          >
-            {isSearching ? <Icon name="Loader2" size={20} className="animate-spin" /> : <Icon name="Search" size={20} />}
-          </Button>
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Вставьте ссылку из Steam Market..."
+              value={steamUrl}
+              onChange={(e) => setSteamUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleLoadFromUrl()}
+              className="flex-1"
+            />
+            <Button 
+              className="bg-[#66C0F4] hover:bg-[#1B2838]"
+              onClick={handleLoadFromUrl}
+              disabled={isLoadingFromUrl}
+            >
+              {isLoadingFromUrl ? <Icon name="Loader2" size={20} className="animate-spin" /> : <Icon name="Link" size={20} />}
+            </Button>
+          </div>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">или поиск</span>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Введите название (АК-47, AWP, M4A4, Сланец)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="flex-1"
+            />
+            <Button 
+              className="bg-[#66C0F4] hover:bg-[#1B2838]"
+              onClick={handleSearch}
+              disabled={isSearching}
+            >
+              {isSearching ? <Icon name="Loader2" size={20} className="animate-spin" /> : <Icon name="Search" size={20} />}
+            </Button>
+          </div>
         </div>
 
         {searchResults.length > 0 && (
