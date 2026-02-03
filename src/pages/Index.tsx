@@ -620,7 +620,12 @@ const Index = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Текущая цена:</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold">{track.current_price}₽</span>
+                            <div className="text-right">
+                              <span className="font-semibold">{track.current_price}₽</span>
+                              <span className="text-xs text-muted-foreground ml-1">
+                                ({(parseFloat(track.current_price) * 0.87).toFixed(2)}₽)
+                              </span>
+                            </div>
                             {priceReached && (
                               <Icon name="TrendingDown" size={16} className="text-green-500" />
                             )}
