@@ -53,7 +53,7 @@ const Index = () => {
   const [targetPrice, setTargetPrice] = useState('');
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
-  const [updateInterval, setUpdateInterval] = useState<number>(5);
+  const [updateInterval, setUpdateInterval] = useState<number>(10);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [steamId, setSteamId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Steam User');
@@ -85,9 +85,11 @@ const Index = () => {
   useEffect(() => {
     if (tracks.length === 0 || updateInterval === 0) return;
 
+    const intervalMs = updateInterval < 1 ? updateInterval * 1000 : updateInterval * 60 * 1000;
+    
     const intervalId = setInterval(() => {
       handleUpdatePrices();
-    }, updateInterval * 60 * 1000);
+    }, intervalMs);
 
     return () => clearInterval(intervalId);
   }, [tracks.length, updateInterval]);
@@ -759,8 +761,10 @@ const Index = () => {
           <div>
             <p className="font-medium mb-2">Интервал автоматического обновления</p>
             <p className="text-sm text-muted-foreground mb-4">Как часто проверять цены на отслеживаемые предметы</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
+                { value: 0.001, label: '1 секунда' },
+                { value: 0.01, label: '10 секунд' },
                 { value: 1, label: '1 минута' },
                 { value: 5, label: '5 минут' },
                 { value: 10, label: '10 минут' },
@@ -785,7 +789,7 @@ const Index = () => {
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800 flex items-center">
                 <Icon name="Info" size={16} className="mr-2" />
-                <span>Текущий интервал: <strong>каждые {updateInterval} {updateInterval === 1 ? 'минуту' : 'минут'}</strong></span>
+                <span>Текущий интервал: <strong>{updateInterval < 1 ? `каждые ${updateInterval * 1000} ${updateInterval * 1000 === 1 ? 'секунду' : updateInterval * 1000 === 10 ? 'секунд' : 'секунд'}` : `каждые ${updateInterval} ${updateInterval === 1 ? 'минуту' : 'минут'}`}</strong></span>
               </p>
             </div>
           </div>
