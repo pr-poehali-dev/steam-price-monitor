@@ -46,9 +46,6 @@ type SearchResult = {
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'home' | 'tracks' | 'history' | 'notifications' | 'settings' | 'profile'>('home');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SearchResult | null>(null);
   const [targetPrice, setTargetPrice] = useState('');
@@ -265,38 +262,7 @@ const Index = () => {
     },
   ];
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
-    setIsSearching(true);
-    try {
-      const response = await fetch(`https://functions.poehali.dev/9b8f310b-9d23-4b6f-868c-1713c20546ad?q=${encodeURIComponent(searchQuery)}`);
-      const data = await response.json();
-      
-      setSearchResults(data.results || []);
-      
-      if (data.results && data.results.length > 0) {
-        toast({
-          title: 'Поиск завершён',
-          description: `Найдено предметов: ${data.results.length}`,
-        });
-      } else {
-        toast({
-          title: 'Ничего не найдено',
-          description: 'Попробуйте другой запрос или проверьте написание',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Ошибка поиска',
-        description: 'Не удалось выполнить поиск',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  };
+
 
   const handleUpdatePrices = async () => {
     if (!steamId) return;
@@ -478,63 +444,10 @@ const Index = () => {
             </Button>
           </div>
           
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">или поиск</span>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Input
-              placeholder="Введите название (АК-47, AWP, M4A4, Сланец)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1"
-            />
-            <Button 
-              className="bg-[#66C0F4] hover:bg-[#1B2838]"
-              onClick={handleSearch}
-              disabled={isSearching}
-            >
-              {isSearching ? <Icon name="Loader2" size={20} className="animate-spin" /> : <Icon name="Search" size={20} />}
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground text-center">
+            Откройте предмет в Steam Market и скопируйте ссылку
+          </p>
         </div>
-
-        {searchResults.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Результаты поиска ({searchResults.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {searchResults.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex gap-4 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setAddDialogOpen(true);
-                    }}
-                  >
-                    <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded" />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{item.price}</p>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      <Icon name="Plus" size={16} />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 mt-12">
