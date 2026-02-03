@@ -653,7 +653,9 @@ const Index = () => {
                             variant="outline"
                             className="gap-1"
                             onClick={() => {
-                              const marketUrl = `https://steamcommunity.com/market/listings/730/${encodeURIComponent(track.item_hash_name)}`;
+                              const hashName = track.item_hash_name || track.item_name;
+                              const marketUrl = `https://steamcommunity.com/market/listings/730/${encodeURIComponent(hashName)}`;
+                              console.log('Opening Steam Market URL:', marketUrl);
                               window.open(marketUrl, '_blank');
                             }}
                           >
