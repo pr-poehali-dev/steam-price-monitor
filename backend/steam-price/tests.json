@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Get AK-47 Redline price",
+      "method": "GET",
+      "path": "/?item=AK-47%20%7C%20Redline%20(Field-Tested)",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "item_name": "string",
+        "lowest_price": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing item parameter",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
