@@ -72,9 +72,13 @@ const Index = () => {
     if (urlParams.get('openid.claimed_id')) {
       handleSteamCallback(Object.fromEntries(urlParams));
     }
-    
-    loadTracks();
   }, []);
+
+  useEffect(() => {
+    if (steamId) {
+      loadTracks();
+    }
+  }, [steamId]);
 
   useEffect(() => {
     if (tracks.length === 0 || updateInterval === 0) return;
@@ -138,14 +142,24 @@ const Index = () => {
   };
 
   const loadTracks = async () => {
+    if (!steamId) return;
+    
     try {
       const response = await fetch('https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617', {
         headers: {
-          'X-User-Id': '1'
+          'X-Steam-Id': steamId
         }
       });
       const data = await response.json();
-      setTracks(data);
+      if (response.ok) {
+        setTracks(data);
+      } else if (response.status === 401) {
+        toast({
+          title: 'Требуется авторизация',
+          description: 'Войдите через Steam для просмотра треков',
+          variant: 'destructive',
+        });
+      }
     } catch (error) {
       console.error('Failed to load tracks:', error);
       toast({
@@ -231,12 +245,14 @@ const Index = () => {
   };
 
   const handleUpdatePrices = async () => {
+    if (!steamId) return;
+    
     setIsUpdatingPrices(true);
     try {
       const response = await fetch('https://functions.poehali.dev/8a542755-406e-4de6-aa76-c0e793c12a81', {
         method: 'POST',
         headers: {
-          'X-User-Id': '1'
+          'X-Steam-Id': steamId
         }
       });
       const data = await response.json();
@@ -292,7 +308,7 @@ const Index = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': '1'
+          'X-Steam-Id': steamId || ''
         },
         body: JSON.stringify(trackData)
       });
@@ -587,7 +603,7 @@ const Index = () => {
                               await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
                                 method: 'DELETE',
                                 headers: {
-                                  'X-User-Id': '1'
+                                  'X-Steam-Id': steamId || ''
                                 }
                               });
                               await loadTracks();

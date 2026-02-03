@@ -17,21 +17,45 @@ def handler(event: dict, context) -> dict:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id'
+                'Access-Control-Allow-Headers': 'Content-Type, X-Steam-Id'
             },
             'body': '',
             'isBase64Encoded': False
         }
 
-    user_id = event.get('headers', {}).get('X-User-Id') or event.get('headers', {}).get('x-user-id')
+    steam_id = event.get('headers', {}).get('X-Steam-Id') or event.get('headers', {}).get('x-steam-id')
     
-    if not user_id:
-        user_id = '1'
+    if not steam_id:
+        return {
+            'statusCode': 401,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'Authentication required'}),
+            'isBase64Encoded': False
+        }
 
     conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute(
+            f"SELECT id FROM {os.environ['MAIN_DB_SCHEMA']}.users WHERE steam_id = %s",
+            (steam_id,)
+        )
+        user = cur.fetchone()
+        
+        if not user:
+            cur.execute(
+                f"INSERT INTO {os.environ['MAIN_DB_SCHEMA']}.users (steam_id, username) VALUES (%s, %s) RETURNING id",
+                (steam_id, f'User{steam_id[-4:]}')
+            )
+            user = cur.fetchone()
+            conn.commit()
+        
+        user_id = user['id']
 
         if method == 'GET':
             track_id = event.get('queryStringParameters', {}).get('id')
