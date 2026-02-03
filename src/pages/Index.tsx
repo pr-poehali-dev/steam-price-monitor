@@ -109,7 +109,13 @@ const Index = () => {
   const loadSteamProfile = async (steamId: string) => {
     try {
       const corsProxy = 'https://corsproxy.io/?';
-      const apiKey = 'YOUR_STEAM_API_KEY';
+      const apiKey = import.meta.env.VITE_STEAM_API_KEY;
+      
+      if (!apiKey) {
+        console.warn('VITE_STEAM_API_KEY not configured');
+        throw new Error('API key not configured');
+      }
+      
       const apiUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`;
       
       const response = await fetch(corsProxy + encodeURIComponent(apiUrl));
