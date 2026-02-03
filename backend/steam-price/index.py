@@ -33,7 +33,7 @@ def handler(event: dict, context) -> dict:
             }
 
         try:
-            price_url = f'https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name={urllib.parse.quote(item_name)}'
+            price_url = f'https://steamcommunity.com/market/priceoverview/?appid=730&currency=5&market_hash_name={urllib.parse.quote(item_name)}'
             
             req = urllib.request.Request(price_url)
             req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
@@ -49,13 +49,12 @@ def handler(event: dict, context) -> dict:
                 
                 if lowest_price != 'N/A':
                     import re
-                    price_match = re.search(r'[\d,\.]+', lowest_price)
+                    price_match = re.search(r'[\d\s]+[,\.]?\d*', lowest_price)
                     if price_match:
-                        price_str = price_match.group(0).replace(',', '')
+                        price_str = price_match.group(0).replace(' ', '').replace(',', '.')
                         try:
-                            price_usd = float(price_str)
-                            price_value = price_usd * 95
-                            print(f"Converted price: ${price_usd} -> {price_value}₽")
+                            price_value = float(price_str)
+                            print(f"Parsed price: {price_value}₽")
                         except ValueError:
                             print(f"Failed to parse price: {price_str}")
                             price_value = None
