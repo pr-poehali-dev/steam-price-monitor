@@ -67,6 +67,8 @@ const Index = () => {
   const [isSavingCredentials, setIsSavingCredentials] = useState(false);
   const [editingTrackId, setEditingTrackId] = useState<number | null>(null);
   const [editTargetPrice, setEditTargetPrice] = useState<string>('');
+  const [steamUrl, setSteamUrl] = useState<string>('');
+  const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -338,6 +340,49 @@ const Index = () => {
     }
   };
 
+  const handleLoadFromUrl = async () => {
+    if (!steamUrl.trim()) {
+      toast({
+        title: 'Введите ссылку',
+        description: 'Вставьте ссылку на предмет из Steam Market',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoadingFromUrl(true);
+    try {
+      const urlMatch = steamUrl.match(/\/market\/listings\/730\/([^?]+)/);
+      if (!urlMatch) {
+        throw new Error('Неверная ссылка');
+      }
+
+      const hashName = decodeURIComponent(urlMatch[1]);
+      
+      const response = await fetch(`https://functions.poehali.dev/9b8f310b-9d23-4b6f-868c-1713c20546ad?q=${encodeURIComponent(hashName)}`);
+      const data = await response.json();
+
+      if (data.results && data.results.length > 0) {
+        setSelectedItem(data.results[0]);
+        setSteamUrl('');
+        toast({
+          title: '✅ Предмет найден',
+          description: `${data.results[0].name}`,
+        });
+      } else {
+        throw new Error('Предмет не найден');
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить предмет по ссылке',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingFromUrl(false);
+    }
+  };
+
   const handleAddTrack = async () => {
     if (!selectedItem || !targetPrice) {
       toast({
@@ -386,6 +431,7 @@ const Index = () => {
       setTargetPrice('');
       setSearchQuery('');
       setSearchResults([]);
+      setSteamUrl('');
     } catch (error) {
       toast({
         title: 'Ошибка',
@@ -530,6 +576,31 @@ const Index = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
+                <Label>Ссылка на предмет из Steam</Label>
+                <p className="text-sm text-muted-foreground mt-1">Вставьте ссылку из адресной строки браузера</p>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder="https://steamcommunity.com/market/listings/730/AK-47%20%7C%20Redline..."
+                    value={steamUrl}
+                    onChange={(e) => setSteamUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLoadFromUrl()}
+                  />
+                  <Button onClick={handleLoadFromUrl} disabled={isLoadingFromUrl}>
+                    {isLoadingFromUrl ? <Icon name="Loader2" className="animate-spin" /> : <Icon name="Link" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-muted-foreground">или</span>
+                </div>
+              </div>
+
+              <div>
                 <Label>Поиск предмета</Label>
                 <p className="text-sm text-muted-foreground mt-1">Можно на русском или английском: АК-47, AWP, Сланец, M4A4</p>
                 <div className="flex gap-2 mt-2">
@@ -594,6 +665,7 @@ const Index = () => {
                   setSearchQuery('');
                   setSearchResults([]);
                   setTargetPrice('');
+                  setSteamUrl('');
                 }}>
                   Отмена
                 </Button>
