@@ -85,7 +85,7 @@ const Index = () => {
   useEffect(() => {
     if (tracks.length === 0 || updateInterval === 0) return;
 
-    const intervalMs = updateInterval < 1 ? updateInterval * 1000 : updateInterval * 60 * 1000;
+    const intervalMs = updateInterval * 60 * 1000;
     
     const intervalId = setInterval(() => {
       handleUpdatePrices();
@@ -803,7 +803,7 @@ const Index = () => {
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800 flex items-center">
                 <Icon name="Info" size={16} className="mr-2" />
-                <span>Текущий интервал: <strong>{updateInterval < 1 ? `каждые ${updateInterval * 60} секунд` : updateInterval === 1 ? `каждую минуту` : updateInterval === 60 ? `каждый час` : `каждые ${updateInterval} минут`}</strong></span>
+                <span>Текущий интервал: <strong>{updateInterval === 0.5 ? `каждые 30 секунд` : updateInterval === 1 ? `каждую минуту` : updateInterval === 60 ? `каждый час` : `каждые ${updateInterval} минут`}</strong></span>
               </p>
             </div>
           </div>
