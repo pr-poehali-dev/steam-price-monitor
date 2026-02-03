@@ -53,6 +53,7 @@ const Index = () => {
   const [targetPrice, setTargetPrice] = useState('');
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+  const [updateInterval, setUpdateInterval] = useState<number>(5);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -60,14 +61,14 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    if (tracks.length === 0) return;
+    if (tracks.length === 0 || updateInterval === 0) return;
 
     const intervalId = setInterval(() => {
       handleUpdatePrices();
-    }, 5 * 60 * 1000);
+    }, updateInterval * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [tracks.length]);
+  }, [tracks.length, updateInterval]);
 
   const loadTracks = async () => {
     try {
@@ -623,6 +624,47 @@ const Index = () => {
   const renderSettings = () => (
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-3xl font-bold">Настройки</h2>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Обновление цен</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="font-medium mb-2">Интервал автоматического обновления</p>
+            <p className="text-sm text-muted-foreground mb-4">Как часто проверять цены на отслеживаемые предметы</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { value: 1, label: '1 минута' },
+                { value: 5, label: '5 минут' },
+                { value: 10, label: '10 минут' },
+                { value: 30, label: '30 минут' },
+              ].map((option) => (
+                <Button
+                  key={option.value}
+                  variant={updateInterval === option.value ? 'default' : 'outline'}
+                  className={updateInterval === option.value ? 'bg-[#66C0F4] hover:bg-[#1B2838]' : ''}
+                  onClick={() => {
+                    setUpdateInterval(option.value);
+                    toast({
+                      title: 'Интервал обновлен',
+                      description: `Цены будут обновляться каждые ${option.label.toLowerCase()}`,
+                    });
+                  }}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <Icon name="Info" size={16} className="inline mr-2" />
+                Текущий интервал: <strong>каждые {updateInterval} {updateInterval === 1 ? 'минуту' : 'минут'}</strong>
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
