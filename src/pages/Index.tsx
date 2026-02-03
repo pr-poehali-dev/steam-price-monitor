@@ -763,12 +763,12 @@ const Index = () => {
             <p className="text-sm text-muted-foreground mb-4">Как часто проверять цены на отслеживаемые предметы</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
-                { value: 0.001, label: '1 секунда' },
-                { value: 0.01, label: '10 секунд' },
+                { value: 0.5, label: '30 секунд' },
                 { value: 1, label: '1 минута' },
                 { value: 5, label: '5 минут' },
                 { value: 10, label: '10 минут' },
                 { value: 30, label: '30 минут' },
+                { value: 60, label: '1 час' },
               ].map((option) => (
                 <Button
                   key={option.value}
@@ -789,7 +789,7 @@ const Index = () => {
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800 flex items-center">
                 <Icon name="Info" size={16} className="mr-2" />
-                <span>Текущий интервал: <strong>{updateInterval < 1 ? `каждые ${updateInterval * 1000} ${updateInterval * 1000 === 1 ? 'секунду' : updateInterval * 1000 === 10 ? 'секунд' : 'секунд'}` : `каждые ${updateInterval} ${updateInterval === 1 ? 'минуту' : 'минут'}`}</strong></span>
+                <span>Текущий интервал: <strong>{updateInterval < 1 ? `каждые ${updateInterval * 60} секунд` : updateInterval === 1 ? `каждую минуту` : updateInterval === 60 ? `каждый час` : `каждые ${updateInterval} минут`}</strong></span>
               </p>
             </div>
           </div>
