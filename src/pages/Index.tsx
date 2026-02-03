@@ -52,10 +52,19 @@ const Index = () => {
   const [selectedItem, setSelectedItem] = useState<SearchResult | null>(null);
   const [targetPrice, setTargetPrice] = useState('');
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadTracks();
+    
+    const intervalId = setInterval(() => {
+      if (tracks.length > 0) {
+        handleUpdatePrices();
+      }
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const loadTracks = async () => {
@@ -148,6 +157,41 @@ const Index = () => {
       });
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleUpdatePrices = async () => {
+    setIsUpdatingPrices(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/8a542755-406e-4de6-aa76-c0e793c12a81', {
+        method: 'POST',
+        headers: {
+          'X-User-Id': '1'
+        }
+      });
+      const data = await response.json();
+      
+      await loadTracks();
+      
+      if (data.price_drops && data.price_drops.length > 0) {
+        toast({
+          title: '🎯 Цена достигнута!',
+          description: `${data.price_drops.length} предмет(ов) достигли целевой цены!`,
+        });
+      } else {
+        toast({
+          title: 'Цены обновлены',
+          description: `Обновлено: ${data.updated} из ${data.total}`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка обновления',
+        description: 'Не удалось обновить цены',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingPrices(false);
     }
   };
 
@@ -317,13 +361,26 @@ const Index = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">Мои треки</h2>
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-[#66C0F4] hover:bg-[#1B2838]">
-              <Icon name="Plus" size={20} className="mr-2" />
-              Добавить предмет
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleUpdatePrices}
+            disabled={isUpdatingPrices || tracks.length === 0}
+          >
+            {isUpdatingPrices ? (
+              <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
+            ) : (
+              <Icon name="RefreshCw" size={20} className="mr-2" />
+            )}
+            Обновить цены
+          </Button>
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-[#66C0F4] hover:bg-[#1B2838]">
+                <Icon name="Plus" size={20} className="mr-2" />
+                Добавить предмет
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Добавить предмет в отслеживание</DialogTitle>
@@ -416,17 +473,24 @@ const Index = () => {
             <p className="text-muted-foreground">Нет активных треков. Добавьте первый предмет!</p>
           </div>
         ) : (
-          tracks.map((track) => (
-          <Card key={track.id} className="hover:shadow-lg transition-shadow">
+          tracks.map((track) => {
+            const priceReached = track.current_price <= track.target_price;
+            return (
+          <Card key={track.id} className={`hover:shadow-lg transition-shadow ${priceReached ? 'border-green-500 border-2' : ''}`}>
             <CardContent className="p-6">
               <div className="flex gap-4">
                 <img src={track.item_image} alt={track.item_name} className="w-24 h-24 object-cover rounded-lg" />
                 <div className="flex-1">
                   <h3 className="font-semibold mb-2">{track.item_name}</h3>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Текущая цена:</span>
-                      <span className="font-semibold">{track.current_price}₽</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{track.current_price}₽</span>
+                        {priceReached && (
+                          <Icon name="TrendingDown" size={16} className="text-green-500" />
+                        )}
+                      </div>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Целевая цена:</span>
@@ -434,9 +498,16 @@ const Index = () => {
                     </div>
                   </div>
                   <div className="mt-4 flex gap-2 justify-between items-center">
-                    <Badge variant={track.status === 'active' ? 'default' : 'secondary'}>
-                      {track.status === 'active' ? 'Активен' : 'Куплен'}
-                    </Badge>
+                    <div className="flex gap-2">
+                      <Badge variant={track.status === 'active' ? 'default' : 'secondary'}>
+                        {track.status === 'active' ? 'Активен' : 'Куплен'}
+                      </Badge>
+                      {priceReached && (
+                        <Badge className="bg-green-500">
+                          🎯 Цель достигнута
+                        </Badge>
+                      )}
+                    </div>
                     <Button 
                       size="sm" 
                       variant="ghost"
@@ -469,7 +540,8 @@ const Index = () => {
               </div>
             </CardContent>
           </Card>
-          ))
+            );
+          })
         )}
       </div>
     </div>

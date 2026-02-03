@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "Update prices for user tracks",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "updated": "number",
+        "total": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
