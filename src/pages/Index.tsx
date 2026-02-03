@@ -650,6 +650,7 @@ const Index = () => {
                             id={`auto-purchase-${track.id}`}
                             checked={track.auto_purchase || false}
                             onChange={async (e) => {
+                              const newValue = e.target.checked;
                               try {
                                 const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
                                   method: 'PUT',
@@ -657,13 +658,13 @@ const Index = () => {
                                     'Content-Type': 'application/json',
                                     'X-Steam-Id': steamId || ''
                                   },
-                                  body: JSON.stringify({ auto_purchase: e.target.checked })
+                                  body: JSON.stringify({ auto_purchase: newValue })
                                 });
                                 if (response.ok) {
                                   await loadTracks();
                                   toast({
-                                    title: e.target.checked ? 'Автопокупка включена' : 'Автопокупка выключена',
-                                    description: e.target.checked ? 'Предмет будет куплен автоматически при достижении цены' : 'Автоматическая покупка отключена',
+                                    title: newValue ? '✅ Автопокупка включена' : '❌ Автопокупка выключена',
+                                    description: newValue ? 'Предмет будет куплен автоматически при достижении цены' : 'Автоматическая покупка отключена',
                                   });
                                 }
                               } catch (error) {
