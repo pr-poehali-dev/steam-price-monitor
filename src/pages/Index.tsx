@@ -479,70 +479,70 @@ const Index = () => {
           tracks.map((track) => {
             const priceReached = track.current_price <= track.target_price;
             return (
-          <Card key={track.id} className={`hover:shadow-lg transition-shadow ${priceReached ? 'border-green-500 border-2' : ''}`}>
-            <CardContent className="p-6">
-              <div className="flex gap-4">
-                <img src={track.item_image} alt={track.item_name} className="w-24 h-24 object-cover rounded-lg" />
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-2">{track.item_name}</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Текущая цена:</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{track.current_price}₽</span>
-                        {priceReached && (
-                          <Icon name="TrendingDown" size={16} className="text-green-500" />
-                        )}
+              <Card key={track.id} className={`hover:shadow-lg transition-shadow ${priceReached ? 'border-green-500 border-2' : ''}`}>
+                <CardContent className="p-6">
+                  <div className="flex gap-4">
+                    <img src={track.item_image} alt={track.item_name} className="w-24 h-24 object-cover rounded-lg" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-2">{track.item_name}</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Текущая цена:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{track.current_price}₽</span>
+                            {priceReached && (
+                              <Icon name="TrendingDown" size={16} className="text-green-500" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Целевая цена:</span>
+                          <span className="font-semibold text-[#66C0F4]">{track.target_price}₽</span>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex gap-2 justify-between items-center">
+                        <div className="flex gap-2">
+                          <Badge variant={track.status === 'active' ? 'default' : 'secondary'}>
+                            {track.status === 'active' ? 'Активен' : 'Куплен'}
+                          </Badge>
+                          {priceReached && (
+                            <Badge className="bg-green-500">
+                              🎯 Цель достигнута
+                            </Badge>
+                          )}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={async () => {
+                            try {
+                              await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
+                                method: 'DELETE',
+                                headers: {
+                                  'X-User-Id': '1'
+                                }
+                              });
+                              await loadTracks();
+                              toast({
+                                title: 'Трек удалён',
+                                description: 'Предмет убран из отслеживания',
+                              });
+                            } catch (error) {
+                              toast({
+                                title: 'Ошибка',
+                                description: 'Не удалось удалить трек',
+                                variant: 'destructive',
+                              });
+                            }
+                          }}
+                        >
+                          <Icon name="Trash2" size={16} className="text-red-500" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Целевая цена:</span>
-                      <span className="font-semibold text-[#66C0F4]">{track.target_price}₽</span>
-                    </div>
                   </div>
-                  <div className="mt-4 flex gap-2 justify-between items-center">
-                    <div className="flex gap-2">
-                      <Badge variant={track.status === 'active' ? 'default' : 'secondary'}>
-                        {track.status === 'active' ? 'Активен' : 'Куплен'}
-                      </Badge>
-                      {priceReached && (
-                        <Badge className="bg-green-500">
-                          🎯 Цель достигнута
-                        </Badge>
-                      )}
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={async () => {
-                        try {
-                          await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617?id=${track.id}`, {
-                            method: 'DELETE',
-                            headers: {
-                              'X-User-Id': '1'
-                            }
-                          });
-                          await loadTracks();
-                          toast({
-                            title: 'Трек удалён',
-                            description: 'Предмет убран из отслеживания',
-                          });
-                        } catch (error) {
-                          toast({
-                            title: 'Ошибка',
-                            description: 'Не удалось удалить трек',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}
-                    >
-                      <Icon name="Trash2" size={16} className="text-red-500" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
             );
           })
         )}
