@@ -41,39 +41,57 @@ def handler(event: dict, context) -> dict:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Специальный путь для сохранения Steam credentials
-        path = event.get('path', '')
-        print(f"Method: {method}, Path: {path}, Steam ID: {steam_id}")
-        if method == 'PUT' and 'steam-credentials' in path:
+        # Обработка сохранения Steam credentials
+        if method == 'PUT':
             body = json.loads(event.get('body', '{}'))
             
-            update_fields = []
-            values = []
-            
-            if 'steam_cookie' in body:
-                update_fields.append('steam_cookie = %s')
-                values.append(body['steam_cookie'])
-            if 'steam_session_id' in body:
-                update_fields.append('steam_session_id = %s')
-                values.append(body['steam_session_id'])
-            
-            if update_fields:
-                values.append(steam_id)
-                cur.execute(
-                    f"UPDATE {os.environ['MAIN_DB_SCHEMA']}.users SET {', '.join(update_fields)} WHERE steam_id = %s",
-                    values
-                )
-                conn.commit()
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'success': True}),
-                    'isBase64Encoded': False
-                }
+            # Если в теле есть steam_cookie или steam_session_id, обновляем credentials
+            if 'steam_cookie' in body or 'steam_session_id' in body:
+                # Проверяем нет ли других полей (чтобы это не был обычный PUT для трека)
+                track_fields = {'current_price', 'target_price', 'status', 'auto_purchase'}
+                if not any(field in body for field in track_fields):
+                    # Это запрос на обновление credentials
+                    update_fields = []
+                    values = []
+                    
+                    if 'steam_cookie' in body:
+                        update_fields.append('steam_cookie = %s')
+                        values.append(body['steam_cookie'])
+                    if 'steam_session_id' in body:
+                        update_fields.append('steam_session_id = %s')
+                        values.append(body['steam_session_id'])
+                    
+                    if update_fields:
+                        # Проверяем существует ли пользователь
+                        cur.execute(
+                            f"SELECT id FROM {os.environ['MAIN_DB_SCHEMA']}.users WHERE steam_id = %s",
+                            (steam_id,)
+                        )
+                        user = cur.fetchone()
+                        
+                        if not user:
+                            # Создаём пользователя если его нет
+                            cur.execute(
+                                f"INSERT INTO {os.environ['MAIN_DB_SCHEMA']}.users (steam_id, username) VALUES (%s, %s)",
+                                (steam_id, f'User{steam_id[-4:]}')
+                            )
+                        
+                        values.append(steam_id)
+                        cur.execute(
+                            f"UPDATE {os.environ['MAIN_DB_SCHEMA']}.users SET {', '.join(update_fields)} WHERE steam_id = %s",
+                            values
+                        )
+                        conn.commit()
+                        
+                        return {
+                            'statusCode': 200,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'body': json.dumps({'success': True}),
+                            'isBase64Encoded': False
+                        }
         
         cur.execute(
             f"SELECT id FROM {os.environ['MAIN_DB_SCHEMA']}.users WHERE steam_id = %s",

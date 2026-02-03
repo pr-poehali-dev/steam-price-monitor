@@ -1017,7 +1017,7 @@ const Index = () => {
 
               setIsSavingCredentials(true);
               try {
-                const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617/steam-credentials`, {
+                const response = await fetch(`https://functions.poehali.dev/a97c3070-2b71-44f2-9ce7-ab07c6785617`, {
                   method: 'PUT',
                   headers: {
                     'Content-Type': 'application/json',
