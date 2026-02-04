@@ -541,49 +541,6 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-muted-foreground">или</span>
-                </div>
-              </div>
-
-              <div>
-                <Label>Поиск предмета</Label>
-                <p className="text-sm text-muted-foreground mt-1">Можно на русском или английском: АК-47, AWP, Сланец, M4A4</p>
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    placeholder="Например: АК-47 Красная линия или AK-47 Redline..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  />
-                  <Button onClick={handleSearch} disabled={isSearching}>
-                    {isSearching ? <Icon name="Loader2" className="animate-spin" /> : <Icon name="Search" />}
-                  </Button>
-                </div>
-              </div>
-
-              {searchResults.length > 0 && !selectedItem && (
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  {searchResults.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
-                      onClick={() => setSelectedItem(item)}
-                    >
-                      <img src={item.image} alt={item.name} className="w-16 h-16 rounded" />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.price}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
               {selectedItem && (
                 <Card>
                   <CardContent className="p-4">
@@ -612,8 +569,6 @@ const Index = () => {
                 <Button variant="outline" onClick={() => {
                   setAddDialogOpen(false);
                   setSelectedItem(null);
-                  setSearchQuery('');
-                  setSearchResults([]);
                   setTargetPrice('');
                   setSteamUrl('');
                 }}>
