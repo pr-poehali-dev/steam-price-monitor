@@ -545,7 +545,14 @@ const Index = () => {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex gap-3 items-center mb-4">
-                      <img src={selectedItem.image} alt={selectedItem.name} className="w-20 h-20 rounded" />
+                      <img 
+                        src={selectedItem.image} 
+                        alt={selectedItem.name} 
+                        className="w-20 h-20 rounded bg-gray-100"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/80x80.png?text=Steam';
+                        }}
+                      />
                       <div>
                         <p className="font-semibold">{selectedItem.name}</p>
                         <p className="text-sm text-muted-foreground">{selectedItem.price}</p>
@@ -601,7 +608,14 @@ const Index = () => {
               <Card key={track.id} className={`hover:shadow-lg transition-shadow ${priceReached ? 'border-green-500 border-2' : ''}`}>
                 <CardContent className="p-6">
                   <div className="flex gap-4">
-                    <img src={track.item_image} alt={track.item_name} className="w-24 h-24 object-cover rounded-lg" />
+                    <img 
+                      src={track.item_image} 
+                      alt={track.item_name} 
+                      className="w-24 h-24 object-cover rounded-lg bg-gray-100"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/96x96.png?text=Steam';
+                      }}
+                    />
                     <div className="flex-1">
                       <h3 className="font-semibold mb-2">{track.item_name}</h3>
                       <div className="space-y-2 text-sm">
